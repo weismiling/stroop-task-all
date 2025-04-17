@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ストループ課題</title>
+  <script src="https://unpkg.com/jspsych@7.3.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+  <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" />
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 2em; }
+  </style>
+</head>
+<body>
+  <script>
+    const jsPsych = initJsPsych({
+      on_finish: function() {
+        const results = jsPsych.data.get().filter({trial_type: 'html-keyboard-response'}).map(trial => ({
+          participant_id: trial.participant_id,
+          word: trial.word,
+          color: trial.color,
+          congruent: trial.congruent,
+          rt: trial.rt,
+          key_press: trial.key_press
+        }));
+
+        // ここに自分のApps ScriptのURLを貼る！
+        fetch("https://script.google.com/macros/s/AKfycbwgtCXI8f81cIE049xXFziqB5g1UlCSj9Do8BP6NIBQsa_AeYdggjJqon7uZ8bcH6G_/exec", {
+          method: "POST",
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(results)
+        })
+        .then(res => res.text())
+        .then(data => {
+          console.log("送信成功：", data);
+        })
+        .catch(err => {
+          console.error("送信エラー：", err);
+        });
+
+        jsPsych.data.displayData(); // デバッグ用表示
+      }
+    });
+
+    const participantID = jsPsych.randomization.randomID(8);
+    const timeline = [];
+
+    timeline.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: 'ストループ課題へようこそ。<br><br>スペースキーで開始します。',
+      choices: [' ']
+    });
+
+    const words = ['赤', '青', '緑'];
+    const colors = ['red', 'blue', 'green'];
+
+    function getJapaneseColorName(color) {
+      return {red: '赤', blue: '青', green: '緑'}[color];
+    }
+
+    let trials = [];
+    for (let rep = 0; rep < 2; rep++) {
+      for (let word of words) {
+        for (let color of colors) {
+          trials.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<p style="font-size:48px; color:${color};">${word}</p>`,
+            choices: ['r', 'g', 'b'],
+            data: {
+              participant_id: participantID,
+              word: word,
+              color: color,
+              congruent: word === getJapaneseColorName(color) ? 'congruent' : 'incongruent'
+            },
+            trial_duration: 2000
+          });
+        }
+      }
+    }
+
+    timeline.push(...jsPsych.randomization.shuffle(trials));
+
+    timeline.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '終了しました。ご協力ありがとうございました。',
+      choices: 'NO_KEYS',
+      trial_duration: 2000
+    });
+
+    jsPsych.run(timeline);
+  </script>
+</body>
+</html>
