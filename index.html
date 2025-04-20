@@ -11,7 +11,28 @@
   </style>
 </head>
 <body>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database-compat.js"></script>
+  
   <script>
+    // Firebase 設定 - ご自身の設定情報に置き換えてください
+    const firebaseConfig = {
+       apiKey: "AIzaSyDnZtQ02sSWCajHWkAgoik1JEIUfxP011A",
+  authDomain: "github-survey.firebaseapp.com",
+  databaseURL: "https://github-survey-default-rtdb.firebaseio.com",
+  projectId: "github-survey",
+  storageBucket: "github-survey.firebasestorage.app",
+  messagingSenderId: "736836641989",
+  appId: "1:736836641989:web:5fab88b6fc1dd0f519fcac"
+    };
+
+    // Firebase の初期化
+    firebase.initializeApp(firebaseConfig);
+    
+    // データベース参照を取得
+    const database = firebase.database();
+
     const jsPsych = initJsPsych({
       on_finish: function() {
         const results = jsPsych.data.get().filter({trial_type: 'html-keyboard-response'}).map(trial => ({
@@ -23,19 +44,17 @@
           key_press: trial.key_press
         }));
 
-        // ここに自分のApps ScriptのURLを貼る！
-        fetch("https://script.google.com/macros/s/AKfycbycXir2HCn6d9uCTyyfeBtydG1zAEwiwT3loyQT1RzUNDCbyUgAxjj6pVjq4lrMdjzf/exec", {
-          method: "POST",
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(results)
-        })
-        .then(res => res.text())
-        .then(data => {
-          console.log("送信成功：", data);
-        })
-        .catch(err => {
-          console.error("送信エラー：", err);
-        });
+        // Firebaseにデータを保存
+        const resultsRef = database.ref('stroop_results');
+        const newResultsRef = resultsRef.push();
+        
+        newResultsRef.set(results)
+          .then(() => {
+            console.log("データが正常に保存されました");
+          })
+          .catch((error) => {
+            console.error("データの保存中にエラーが発生しました:", error);
+          });
 
         jsPsych.data.displayData(); // デバッグ用表示
       }
